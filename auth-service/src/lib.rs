@@ -11,15 +11,14 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 
+use domain::{data_stores::UserStore, AuthAPIError};
+
 pub mod domain;
 pub mod routes;
 pub mod services;
 
-use domain::AuthAPIError;
-use services::hashmap_user_store::HashmapUserStore;
-
 // Using a type alias to improve readability!
-pub type UserStoreType = Arc<RwLock<HashmapUserStore>>;
+pub type UserStoreType = Arc<RwLock<dyn UserStore>>;
 
 #[derive(Clone)]
 pub struct AppState {
