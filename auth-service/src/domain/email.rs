@@ -24,10 +24,18 @@ impl AsRef<str> for Email {
     }
 }
 
+impl TryFrom<&str> for Email {
+    type Error = EmailError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::parse(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fake::{Fake, faker::internet::en::*};
+    use fake::{faker::internet::en::*, Fake};
 
     #[test]
     fn test_parse_email() {
