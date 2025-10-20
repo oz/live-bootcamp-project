@@ -1,6 +1,6 @@
-use auth_service::{routes::SignupResponse, ErrorResponse};
+use auth_service::{ErrorResponse, routes::SignupResponse};
 
-use crate::helpers::{get_random_email, TestApp};
+use crate::helpers::{TestApp, get_random_email};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -54,16 +54,7 @@ async fn should_return_201_if_valid_input() {
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    // The signup route should return a 400 HTTP status code if an invalid input is sent.
-    // The input is considered invalid if:
-    // - The email is empty or does not contain '@'
-    // - The password is less than 8 characters
-
-    // Create an array of invalid inputs. Then, iterate through the array and
-    // make HTTP calls to the signup route. Assert a 400 HTTP status code is returned.
     let app = TestApp::new().await;
-
-    // TODO: add more malformed input test cases
     let test_cases = [
         serde_json::json!({ "email": "",               "password": "password123", "requires2FA": true }),
         serde_json::json!({ "email": "bad",            "password": "password123", "requires2FA": true }),

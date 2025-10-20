@@ -1,9 +1,9 @@
 use axum::{
+    Json, Router,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::post,
     serve::Serve,
-    Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -11,14 +11,14 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 
-use domain::{data_stores::UserStore, AuthAPIError};
+use domain::{AuthAPIError, data_stores::UserStore};
 
 pub mod domain;
 pub mod routes;
 pub mod services;
 
 // Using a type alias to improve readability!
-pub type UserStoreType = Arc<RwLock<dyn UserStore>>;
+pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -75,6 +75,9 @@ impl IntoResponse for AuthAPIError {
             AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
+            }
+            AuthAPIError::IncorrectCredentials => {
+                (StatusCode::UNAUTHORIZED, "Incorrect credentials")
             }
         };
         let body = Json(ErrorResponse {
