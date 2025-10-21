@@ -16,6 +16,7 @@ use domain::{AuthAPIError, data_stores::UserStore};
 pub mod domain;
 pub mod routes;
 pub mod services;
+pub mod utils;
 
 // Using a type alias to improve readability!
 pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
