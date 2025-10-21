@@ -6,6 +6,7 @@ use std::env as std_env;
 lazy_static! {
     pub static ref JWT_SECRET: String = set_token();
 }
+pub const JWT_COOKIE_NAME: &str = "jwt";
 
 fn set_token() -> String {
     dotenv().ok(); // Load environment variables
@@ -19,5 +20,3 @@ fn set_token() -> String {
 pub mod env {
     pub const JWT_SECRET_ENV_VAR: &str = "JWT_SECRET";
 }
-
-pub const JWT_COOKIE_NAME: &str = "jwt";

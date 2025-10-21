@@ -6,6 +6,10 @@ pub enum AuthAPIError {
     InvalidCredentials,
     IncorrectCredentials,
     UnexpectedError,
+
+    // JWT
+    MissingToken,
+    InvalidToken,
 }
 
 impl From<email::EmailError> for AuthAPIError {

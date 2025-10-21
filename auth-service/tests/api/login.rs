@@ -1,5 +1,5 @@
 use crate::helpers::{TestApp, get_random_email};
-use auth_service::{ErrorResponse, utils::constants::JWT_COOKIE_NAME};
+use auth_service::utils::constants::JWT_COOKIE_NAME;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {

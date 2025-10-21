@@ -1,17 +1,25 @@
 use std::sync::Arc;
 
-use auth_service::{AppState, Application, services::hashmap_user_store::HashmapUserStore};
+use auth_service::{
+    AppState, Application,
+    domain::email::Email,
+    services::hashmap_user_store::HashmapUserStore,
+    utils::{self, constants::JWT_COOKIE_NAME},
+};
+use reqwest::{Url, cookie::Jar};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
+    pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let cookie_jar = Arc::new(Jar::default());
         let app_state = AppState { user_store };
         let app = Application::build(app_state, "127.0.0.1:0")
             .await
@@ -23,11 +31,15 @@ impl TestApp {
         // to avoid blocking the main test thread.
         #[allow(clippy::let_underscore_future)]
         let _ = tokio::spawn(app.run());
-        let http_client = reqwest::Client::new();
+        let http_client = reqwest::Client::builder()
+            .cookie_provider(cookie_jar.clone())
+            .build()
+            .unwrap();
 
         // Create new `TestApp` instance and return it
         Self {
             address,
+            cookie_jar,
             http_client,
         }
     }
@@ -86,6 +98,19 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub fn authenticate_user(&self, email: &str) {
+        let email = Email::parse(email).unwrap();
+        let token = utils::auth::generate_auth_cookie(&email).unwrap();
+        self.cookie_jar.add_cookie_str(
+            &format!(
+                "{}={}; HttpOnly; SameSite=Lax; Secure; Path=/",
+                JWT_COOKIE_NAME,
+                token.value()
+            ),
+            &Url::parse("http://127.0.0.1").expect("Failed to parse URL"),
+        );
     }
 }
 

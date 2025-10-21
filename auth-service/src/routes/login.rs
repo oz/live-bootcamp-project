@@ -2,10 +2,10 @@ use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize};
 
+use crate::utils;
 use crate::{
     AppState,
     domain::{AuthAPIError, email::Email, password::Password},
-    utils::{self, auth},
 };
 
 pub async fn login(
