@@ -9,6 +9,11 @@ pub trait UserStore {
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError>;
 }
 
+pub trait BannedTokenStore {
+    fn add_token(&mut self, token: &str) -> bool;
+    fn has_token(&self, token: &str) -> bool;
+}
+
 #[derive(Debug, PartialEq)]
 pub enum UserStoreError {
     UserAlreadyExists,

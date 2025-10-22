@@ -51,3 +51,15 @@ async fn should_return_401_if_invalid_token() {
     let response = app.post_verify_token(&body).await;
     assert_eq!(response.status().as_u16(), 401);
 }
+
+#[tokio::test]
+async fn should_return_401_if_banned_token() {
+    let app = TestApp::new().await;
+    let mut banned_store = app.banned_tokens_store.write().await;
+    assert!(banned_store.add_token("banned"));
+    drop(banned_store); // release write lock.
+
+    let body = serde_json::json!({ "token": "banned", });
+    let response = app.post_verify_token(&body).await;
+    assert_eq!(response.status().as_u16(), 401);
+}

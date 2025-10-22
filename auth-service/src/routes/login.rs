@@ -13,17 +13,12 @@ pub async fn login(
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = Email::parse(&request.email);
-    if email.is_err() {
+    let Ok(email) = Email::parse(&request.email) else {
         return (jar, Err(AuthAPIError::InvalidCredentials));
-    }
-    let email = email.unwrap();
-
-    let password = Password::parse(&request.password);
-    if password.is_err() {
+    };
+    let Ok(password) = Password::parse(&request.password) else {
         return (jar, Err(AuthAPIError::InvalidCredentials));
-    }
-    let password = password.unwrap();
+    };
 
     let user_store = &state.user_store.read().await;
     let user = user_store.get_user(email).await;
@@ -35,7 +30,7 @@ pub async fn login(
             }
             let auth_cookie = auth_cookie.unwrap();
             let updated_jar = jar.add(auth_cookie);
-            (updated_jar, Ok(StatusCode::OK.into_response()))
+            (updated_jar, Ok(StatusCode::OK))
         }
         _ => (jar, Err(AuthAPIError::IncorrectCredentials)),
     }

@@ -1,7 +1,7 @@
 use auth_service::utils::constants::JWT_COOKIE_NAME;
 use reqwest::Url;
 
-use crate::helpers::{TestApp, get_random_email};
+use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_400_if_jwt_cookie_missing() {
@@ -31,10 +31,13 @@ async fn should_return_401_if_invalid_token() {
 async fn should_return_200_if_valid_jwt_cookie() {
     let app = TestApp::new().await;
     let email = get_random_email();
-    app.authenticate_user(&email);
+    let token = app.authenticate_user(&email);
 
     let response = app.post_logout().await;
     assert_eq!(response.status().as_u16(), 200);
+
+    let store = app.banned_tokens_store.read().await;
+    assert!(store.has_token(&token));
 }
 
 #[tokio::test]

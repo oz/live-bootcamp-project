@@ -1,8 +1,10 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
+use jsonwebtoken::errors::ErrorKind::InvalidToken;
 use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
+use crate::BannedTokenStoreType;
 use crate::domain::email::Email;
 
 use super::constants::{JWT_COOKIE_NAME, JWT_SECRET};
@@ -57,7 +59,14 @@ fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
 }
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
-pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+pub async fn validate_token(
+    banned_token_store: BannedTokenStoreType,
+    token: &str,
+) -> Result<Claims, jsonwebtoken::errors::Error> {
+    let store = banned_token_store.read().await;
+    if store.has_token(token) {
+        return Err(InvalidToken.into());
+    }
     decode::<Claims>(
         token,
         &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
@@ -84,6 +93,13 @@ pub struct Claims {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::hashset_banned_token_store::HashsetBannedTokenStore;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    fn get_empty_store() -> BannedTokenStoreType {
+        Arc::new(RwLock::new(HashsetBannedTokenStore::default()))
+    }
 
     #[tokio::test]
     async fn test_generate_auth_cookie() {
@@ -116,9 +132,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_validate_token_with_valid_token() {
+        let empty_banned_store = get_empty_store();
         let email = Email::parse("test@example.com").unwrap();
         let token = generate_auth_token(&email).unwrap();
-        let result = validate_token(&token).await.unwrap();
+        let result = validate_token(empty_banned_store, &token).await.unwrap();
         assert_eq!(result.sub, "test@example.com");
 
         let exp = Utc::now()
@@ -131,8 +148,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_validate_token_with_invalid_token() {
+        let empty_banned_store = get_empty_store();
         let token = "invalid_token".to_owned();
-        let result = validate_token(&token).await;
+        let result = validate_token(empty_banned_store, &token).await;
         assert!(result.is_err());
     }
 }

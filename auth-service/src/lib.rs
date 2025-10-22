@@ -11,24 +11,31 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
-use domain::{AuthAPIError, data_stores::UserStore};
+use domain::{AuthAPIError, data_stores::BannedTokenStore, data_stores::UserStore};
 
 pub mod domain;
 pub mod routes;
 pub mod services;
 pub mod utils;
 
-// Using a type alias to improve readability!
+// User accounts
 pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
+
+// Expired tokens
+pub type BannedTokenStoreType = Arc<RwLock<dyn BannedTokenStore + Send + Sync>>;
 
 #[derive(Clone)]
 pub struct AppState {
     pub user_store: UserStoreType,
+    pub banned_tokens_store: BannedTokenStoreType,
 }
 
 impl AppState {
-    pub fn new(user_store: UserStoreType) -> Self {
-        Self { user_store }
+    pub fn new(user_store: UserStoreType, banned_tokens_store: BannedTokenStoreType) -> Self {
+        Self {
+            user_store,
+            banned_tokens_store,
+        }
     }
 }
 

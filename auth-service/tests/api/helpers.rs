@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use auth_service::{
-    AppState, Application,
     domain::email::Email,
-    services::hashmap_user_store::HashmapUserStore,
+    services::{
+        hashmap_user_store::HashmapUserStore, hashset_banned_token_store::HashsetBannedTokenStore,
+    },
     utils::{self, constants::JWT_COOKIE_NAME},
+    AppState, Application, BannedTokenStoreType,
 };
-use reqwest::{Url, cookie::Jar};
+use reqwest::{cookie::Jar, Url};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -14,13 +16,18 @@ pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
+    pub banned_tokens_store: BannedTokenStoreType,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let banned_tokens_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let cookie_jar = Arc::new(Jar::default());
-        let app_state = AppState { user_store };
+        let app_state = AppState {
+            user_store,
+            banned_tokens_store: banned_tokens_store.clone(),
+        };
         let app = Application::build(app_state, utils::constants::test::APP_ADDRESS)
             .await
             .expect("Failed to build app");
@@ -41,6 +48,7 @@ impl TestApp {
             address,
             cookie_jar,
             http_client,
+            banned_tokens_store,
         }
     }
 
@@ -104,7 +112,7 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub fn authenticate_user(&self, email: &str) {
+    pub fn authenticate_user(&self, email: &str) -> String {
         let email = Email::parse(email).unwrap();
         let token = utils::auth::generate_auth_cookie(&email).unwrap();
         self.cookie_jar.add_cookie_str(
@@ -115,6 +123,7 @@ impl TestApp {
             ),
             &Url::parse("http://127.0.0.1").expect("Failed to parse URL"),
         );
+        token.value().to_owned()
     }
 }
 
