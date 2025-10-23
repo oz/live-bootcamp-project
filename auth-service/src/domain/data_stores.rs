@@ -9,9 +9,10 @@ pub trait UserStore {
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError>;
 }
 
+#[async_trait::async_trait]
 pub trait BannedTokenStore {
-    fn add_token(&mut self, token: &str) -> bool;
-    fn has_token(&self, token: &str) -> bool;
+    async fn add_token(&mut self, token: &str) -> bool;
+    async fn has_token(&self, token: &str) -> bool;
 }
 
 #[derive(Debug, PartialEq)]

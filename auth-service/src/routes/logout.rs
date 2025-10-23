@@ -27,7 +27,12 @@ pub async fn logout(
     }
 
     // Try to store token as banned, but don't block logout.
-    state.banned_tokens_store.write().await.add_token(token);
+    state
+        .banned_tokens_store
+        .write()
+        .await
+        .add_token(token)
+        .await;
     let jar = jar.remove(utils::constants::JWT_COOKIE_NAME);
     (jar, Ok(StatusCode::OK))
 }

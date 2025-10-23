@@ -64,7 +64,7 @@ pub async fn validate_token(
     token: &str,
 ) -> Result<Claims, jsonwebtoken::errors::Error> {
     let store = banned_token_store.read().await;
-    if store.has_token(token) {
+    if store.has_token(token).await {
         return Err(InvalidToken.into());
     }
     decode::<Claims>(

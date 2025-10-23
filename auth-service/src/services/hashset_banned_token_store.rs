@@ -8,12 +8,13 @@ pub struct HashsetBannedTokenStore {
     pub tokens: HashSet<String>,
 }
 
+#[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
-    fn add_token(&mut self, token: &str) -> bool {
+    async fn add_token(&mut self, token: &str) -> bool {
         self.tokens.insert(token.to_owned())
     }
 
-    fn has_token(&self, token: &str) -> bool {
+    async fn has_token(&self, token: &str) -> bool {
         self.tokens.contains(token)
     }
 }
@@ -22,19 +23,19 @@ impl BannedTokenStore for HashsetBannedTokenStore {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_add_token() {
+    #[tokio::test]
+    async fn test_add_token() {
         let mut store = HashsetBannedTokenStore::default();
-        assert!(store.add_token("test"));
-        assert!(!store.add_token("test"));
+        assert!(store.add_token("test").await);
+        assert!(!store.add_token("test").await);
     }
 
-    #[test]
-    fn test_has_token() {
+    #[tokio::test]
+    async fn test_has_token() {
         let mut store = HashsetBannedTokenStore::default();
-        assert!(!store.has_token("test"));
+        assert!(!store.has_token("test").await);
 
-        store.add_token("test");
-        assert!(store.has_token("test"));
+        store.add_token("test").await;
+        assert!(store.has_token("test").await);
     }
 }
