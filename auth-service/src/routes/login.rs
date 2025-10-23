@@ -1,11 +1,11 @@
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize};
 
 use crate::utils;
 use crate::{
+    domain::{email::Email, password::Password, AuthAPIError},
     AppState,
-    domain::{AuthAPIError, email::Email, password::Password},
 };
 
 pub async fn login(
@@ -21,8 +21,7 @@ pub async fn login(
     };
 
     let user_store = &state.user_store.read().await;
-    let user = user_store.get_user(email).await;
-    match user {
+    match user_store.get_user(email).await {
         Ok(user) if user.password == password => {
             let auth_cookie = utils::auth::generate_auth_cookie(&(user.email));
             if auth_cookie.is_err() {
