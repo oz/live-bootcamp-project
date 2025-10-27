@@ -1,11 +1,11 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
 use jsonwebtoken::errors::ErrorKind::InvalidToken;
-use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::BannedTokenStoreType;
 use crate::domain::email::Email;
+use crate::BannedTokenStoreType;
 
 use super::constants::{JWT_COOKIE_NAME, JWT_SECRET};
 
@@ -64,7 +64,7 @@ pub async fn validate_token(
     token: &str,
 ) -> Result<Claims, jsonwebtoken::errors::Error> {
     let store = banned_token_store.read().await;
-    if store.has_token(token).await {
+    if store.has_token(token).await.is_err() {
         return Err(InvalidToken.into());
     }
     decode::<Claims>(

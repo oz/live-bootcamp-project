@@ -1,6 +1,6 @@
 use auth_service::utils::constants::JWT_COOKIE_NAME;
 
-use crate::helpers::{TestApp, get_random_email};
+use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -56,7 +56,7 @@ async fn should_return_401_if_invalid_token() {
 async fn should_return_401_if_banned_token() {
     let app = TestApp::new().await;
     let mut banned_store = app.banned_tokens_store.write().await;
-    assert!(banned_store.add_token("banned").await);
+    assert_eq!(Ok(()), banned_store.add_token("banned").await);
     drop(banned_store); // release write lock.
 
     let body = serde_json::json!({ "token": "banned", });

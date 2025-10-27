@@ -1,7 +1,7 @@
 use axum::{debug_handler, extract::State, http::StatusCode};
 use axum_extra::extract::CookieJar;
 
-use crate::{AppState, domain::AuthAPIError, utils};
+use crate::{domain::AuthAPIError, utils, AppState};
 
 #[debug_handler]
 pub async fn logout(
@@ -18,16 +18,14 @@ pub async fn logout(
         Err(e) => return (jar, Err(e)),
     };
 
+    let store = state.banned_tokens_store.clone();
     // Check token
-    if utils::auth::validate_token(state.banned_tokens_store.clone(), token)
-        .await
-        .is_err()
-    {
+    if utils::auth::validate_token(store, token).await.is_err() {
         return (jar, Err(AuthAPIError::InvalidToken));
     }
 
     // Try to store token as banned, but don't block logout.
-    state
+    let _ = state
         .banned_tokens_store
         .write()
         .await
