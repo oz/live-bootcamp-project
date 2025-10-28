@@ -1,7 +1,11 @@
+use reqwest::{Url, cookie::Jar};
 use std::sync::Arc;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use auth_service::{
-    AppState, Application, BannedTokenStoreType, TwoFACodeStoreType,
+    Application,
+    app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
     domain::email::Email,
     services::{
         hashmap_two_fa_code_store::HashmapTwoFACodeStore, hashmap_user_store::HashmapUserStore,
@@ -9,9 +13,6 @@ use auth_service::{
     },
     utils::{self, constants::JWT_COOKIE_NAME},
 };
-use reqwest::{Url, cookie::Jar};
-use tokio::sync::RwLock;
-use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,

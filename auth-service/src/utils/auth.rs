@@ -1,11 +1,11 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
 use jsonwebtoken::errors::ErrorKind::InvalidToken;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
+use crate::app_state::BannedTokenStoreType;
 use crate::domain::email::Email;
-use crate::BannedTokenStoreType;
 
 use super::constants::{JWT_COOKIE_NAME, JWT_SECRET};
 
