@@ -97,7 +97,7 @@ impl Default for TwoFACode {
         let code: String = (&mut rng)
             .sample_iter(range)
             .take(6)
-            .map(char::from)
+            .map(|n: u32| char::from_digit(n, 10).unwrap())
             .collect();
         TwoFACode(code)
     }
