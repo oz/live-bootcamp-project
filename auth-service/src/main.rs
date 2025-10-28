@@ -1,18 +1,23 @@
-use auth_service::services::hashset_banned_token_store::HashsetBannedTokenStore;
+use auth_service::services::{
+    hashmap_two_fa_code_store::HashmapTwoFACodeStore,
+    hashset_banned_token_store::HashsetBannedTokenStore,
+};
 use auth_service::utils::constants::prod;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use auth_service::{services::hashmap_user_store::HashmapUserStore, AppState, Application};
+use auth_service::{AppState, Application, services::hashmap_user_store::HashmapUserStore};
 
 #[tokio::main]
 async fn main() {
     let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
     let banned_tokens_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+    let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
 
     let app_state = AppState {
         user_store,
         banned_tokens_store,
+        two_fa_code_store,
     };
 
     let app = Application::build(app_state, prod::APP_ADDRESS)

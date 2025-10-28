@@ -1,5 +1,7 @@
 use crate::helpers::{TestApp, get_random_email};
-use auth_service::{routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME};
+use auth_service::{
+    domain::email::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME,
+};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
@@ -90,12 +92,18 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     // Login should return a 206
     let response = app.post_login(&login_body).await;
     assert_eq!(response.status().as_u16(), 206);
-    assert_eq!(
-        response
-            .json::<TwoFactorAuthResponse>()
-            .await
-            .expect("Could not deserialize response body to TwoFactorAuthResponse")
-            .message,
-        "2FA required".to_owned()
-    );
+
+    let json_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+    assert_eq!(json_body.message, "2FA required".to_owned());
+
+    let email = Email::parse(&random_email).expect("Email parse error");
+    let two_fa_code_store = app.two_fa_code_store.read().await;
+    let code = two_fa_code_store
+        .get_code(&email)
+        .await
+        .expect("login code not found");
+    assert_eq!(code.0.as_ref(), json_body.login_attempt_id)
 }

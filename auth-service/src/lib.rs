@@ -13,6 +13,8 @@ use tower_http::{cors::CorsLayer, services::ServeDir};
 
 use domain::{AuthAPIError, data_stores::BannedTokenStore, data_stores::UserStore};
 
+use crate::domain::data_stores::TwoFACodeStore;
+
 pub mod domain;
 pub mod routes;
 pub mod services;
@@ -24,17 +26,26 @@ pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
 // Expired tokens
 pub type BannedTokenStoreType = Arc<RwLock<dyn BannedTokenStore + Send + Sync>>;
 
+// 2FA codes
+pub type TwoFACodeStoreType = Arc<RwLock<dyn TwoFACodeStore + Send + Sync>>;
+
 #[derive(Clone)]
 pub struct AppState {
     pub user_store: UserStoreType,
     pub banned_tokens_store: BannedTokenStoreType,
+    pub two_fa_code_store: TwoFACodeStoreType,
 }
 
 impl AppState {
-    pub fn new(user_store: UserStoreType, banned_tokens_store: BannedTokenStoreType) -> Self {
+    pub fn new(
+        user_store: UserStoreType,
+        banned_tokens_store: BannedTokenStoreType,
+        two_fa_code_store: TwoFACodeStoreType,
+    ) -> Self {
         Self {
             user_store,
             banned_tokens_store,
+            two_fa_code_store,
         }
     }
 }
