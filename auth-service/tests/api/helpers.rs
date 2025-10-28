@@ -9,7 +9,7 @@ use auth_service::{
     domain::email::Email,
     services::{
         hashmap_two_fa_code_store::HashmapTwoFACodeStore, hashmap_user_store::HashmapUserStore,
-        hashset_banned_token_store::HashsetBannedTokenStore,
+        hashset_banned_token_store::HashsetBannedTokenStore, mock_email_client::MockEmailClient,
     },
     utils::{self, constants::JWT_COOKIE_NAME},
 };
@@ -27,11 +27,13 @@ impl TestApp {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
         let banned_tokens_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+        let email_client = Arc::new(RwLock::new(MockEmailClient {}));
         let cookie_jar = Arc::new(Jar::default());
         let app_state = AppState {
             user_store,
             banned_tokens_store: banned_tokens_store.clone(),
             two_fa_code_store: two_fa_code_store.clone(),
+            email_client: email_client.clone(),
         };
         let app = Application::build(app_state, utils::constants::test::APP_ADDRESS)
             .await
