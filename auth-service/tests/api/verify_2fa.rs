@@ -1,4 +1,4 @@
-use crate::helpers::{TestApp, create_account, get_random_email};
+use crate::helpers::{TestApp, get_random_email, get_random_password};
 use auth_service::{domain::Email, utils::constants::JWT_COOKIE_NAME};
 
 #[tokio::test]
@@ -61,15 +61,17 @@ async fn should_return_401_if_incorrect_credentials() {
 
 #[tokio::test]
 async fn should_return_401_if_old_code() {
-    // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login requet. This should fail.
+    // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login
+    // request. This should fail with a 401 error.
     let app = TestApp::new().await;
     let email = get_random_email();
+    let password = get_random_password();
     let email_parsed = Email::parse(email.clone().as_ref()).expect("invalid email");
 
-    assert!(true == create_account(&app, &email, "password123", true).await);
+    assert!(true == app.create_account(&email, &password, true).await);
 
     // Try to login, to create a first 2FA code.
-    let body = serde_json::json!({ "email": email, "password": "password123" });
+    let body = serde_json::json!({ "email": email, "password": password});
     let response = app.post_login(&body).await;
     assert_eq!(response.status().as_u16(), 206);
 
@@ -81,7 +83,7 @@ async fn should_return_401_if_old_code() {
     drop(two_fa_store);
 
     // Try a second login to invalidate the previous codes.
-    let body = serde_json::json!({ "email": email, "password": "password123" });
+    let body = serde_json::json!({ "email": email, "password": password});
     let response = app.post_login(&body).await;
     assert_eq!(response.status().as_u16(), 206);
 
@@ -107,7 +109,7 @@ async fn should_return_200_if_correct_code() {
     let email = get_random_email();
     let email_parsed = Email::parse(email.clone().as_ref()).expect("invalid email");
 
-    assert!(true == create_account(&app, &email, "password123", true).await);
+    assert!(true == app.create_account(&email, "password123", true).await);
 
     // Try to login, to create a first 2FA code.
     let body = serde_json::json!({ "email": email, "password": "password123" });
@@ -142,7 +144,7 @@ async fn should_return_401_if_same_code_twice() {
     let email = get_random_email();
     let email_parsed = Email::parse(email.clone().as_ref()).expect("invalid email");
 
-    assert!(true == create_account(&app, &email, "password123", true).await);
+    assert!(true == app.create_account(&email, "password123", true).await);
 
     // Try to login, to get a first 2FA code.
     let body = serde_json::json!({ "email": email, "password": "password123" });

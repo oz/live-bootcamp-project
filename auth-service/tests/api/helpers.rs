@@ -1,7 +1,8 @@
+use fake::Fake;
+use fake::faker::internet::en::{Password, SafeEmail};
 use reqwest::{Url, cookie::Jar};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use uuid::Uuid;
 
 use auth_service::{
     Application,
@@ -137,18 +138,22 @@ impl TestApp {
             .await
             .expect("Failed to execute request.")
     }
+
+    pub async fn create_account(&self, email: &str, password: &str, requires2fa: bool) -> bool {
+        let signup_body = serde_json::json!({
+            "email": email,
+            "password": password,
+            "requires2FA": requires2fa,
+        });
+        let response = self.post_signup(&signup_body).await;
+        response.status().as_u16() == 201
+    }
 }
 
 pub fn get_random_email() -> String {
-    format!("{}@example.com", Uuid::new_v4())
+    SafeEmail().fake()
 }
 
-pub async fn create_account(app: &TestApp, email: &str, password: &str, requires2fa: bool) -> bool {
-    let signup_body = serde_json::json!({
-        "email": email,
-        "password": password,
-        "requires2FA": requires2fa,
-    });
-    let response = app.post_signup(&signup_body).await;
-    response.status().as_u16() == 201
+pub fn get_random_password() -> String {
+    Password(10..15).fake()
 }

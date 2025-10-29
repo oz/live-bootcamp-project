@@ -1,4 +1,4 @@
-use crate::helpers::{TestApp, get_random_email};
+use crate::helpers::{TestApp, get_random_email, get_random_password};
 use auth_service::{
     domain::email::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME,
 };
@@ -42,54 +42,48 @@ async fn should_return_401_if_incorrect_credentials() {
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     let app = TestApp::new().await;
+    let email = get_random_email();
+    let password = get_random_password();
 
-    let random_email = get_random_email();
     let signup_body = serde_json::json!({
-        "email": random_email,
-        "password": "password123",
+        "email": email,
+        "password": password,
         "requires2FA": false
     });
     let response = app.post_signup(&signup_body).await;
-
     assert_eq!(response.status().as_u16(), 201);
 
     let login_body = serde_json::json!({
-        "email": random_email,
-        "password": "password123",
+        "email": email,
+        "password": password,
     });
-
     let response = app.post_login(&login_body).await;
-
     assert_eq!(response.status().as_u16(), 200);
 
     let auth_cookie = response
         .cookies()
         .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
         .expect("No auth cookie found");
-
     assert!(!auth_cookie.value().is_empty());
 }
 
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let app = TestApp::new().await;
+    let email = get_random_email();
+    let password = get_random_password();
 
     // Create an account with 2FA enabled.
-    let random_email = get_random_email();
     let signup_body = serde_json::json!({
-        "email": random_email,
-        "password": "password123",
+        "email": email,
+        "password": password,
         "requires2FA": true
     });
     let response = app.post_signup(&signup_body).await;
     assert_eq!(response.status().as_u16(), 201);
 
-    let login_body = serde_json::json!({
-        "email": random_email,
-        "password": "password123",
-    });
-
     // Login should return a 206
+    let login_body = serde_json::json!({ "email": email, "password": password });
     let response = app.post_login(&login_body).await;
     assert_eq!(response.status().as_u16(), 206);
 
@@ -99,7 +93,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .expect("Could not deserialize response body to TwoFactorAuthResponse");
     assert_eq!(json_body.message, "2FA required".to_owned());
 
-    let email = Email::parse(&random_email).expect("Email parse error");
+    let email = Email::parse(&email).expect("Email parse error");
     let two_fa_code_store = app.two_fa_code_store.read().await;
     let code = two_fa_code_store
         .get_code(&email)
