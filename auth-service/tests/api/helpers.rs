@@ -100,14 +100,6 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_verify_2fa(&self) -> reqwest::Response {
-        self.http_client
-            .post(&format!("{}/verify-2fa", &self.address))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
-
     pub async fn post_verify_token<Body>(&self, body: &Body) -> reqwest::Response
     where
         Body: serde::Serialize,
@@ -133,8 +125,30 @@ impl TestApp {
         );
         token.value().to_owned()
     }
+
+    pub async fn post_verify_2fa<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.http_client
+            .post(format!("{}/verify-2fa", &self.address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
 }
 
 pub fn get_random_email() -> String {
     format!("{}@example.com", Uuid::new_v4())
+}
+
+pub async fn create_account(app: &TestApp, email: &str, password: &str, requires2fa: bool) -> bool {
+    let signup_body = serde_json::json!({
+        "email": email,
+        "password": password,
+        "requires2FA": requires2fa,
+    });
+    let response = app.post_signup(&signup_body).await;
+    response.status().as_u16() == 201
 }

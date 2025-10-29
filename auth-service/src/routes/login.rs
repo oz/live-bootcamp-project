@@ -33,7 +33,6 @@ pub async fn login(
     }
 }
 
-// New!
 async fn handle_2fa(
     email: &Email,
     state: &AppState,
@@ -42,7 +41,7 @@ async fn handle_2fa(
     CookieJar,
     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
 ) {
-    // First, we must generate a new random login attempt ID and 2FA code
+    // Generate a new random login attempt ID and 2FA code.
     let login_attempt_id = LoginAttemptId::default();
     let two_fa_code = TwoFACode::default();
 
@@ -55,6 +54,7 @@ async fn handle_2fa(
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
 
+    // Send code by email.
     let email_client = state.email_client.write().await;
     if email_client
         .send_email(
@@ -83,11 +83,9 @@ async fn handle_no_2fa(
     CookieJar,
     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
 ) {
-    let auth_cookie = utils::auth::generate_auth_cookie(email);
-    if auth_cookie.is_err() {
+    let Ok(auth_cookie) = utils::auth::generate_auth_cookie(email) else {
         return (jar, Err(AuthAPIError::UnexpectedError));
-    }
-    let auth_cookie = auth_cookie.unwrap();
+    };
     let updated_jar = jar.add(auth_cookie);
     (
         updated_jar,
