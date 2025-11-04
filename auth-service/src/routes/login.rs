@@ -21,9 +21,17 @@ pub async fn login(
     };
 
     let user_store = &state.user_store.read().await;
+    if user_store
+        .validate_user(email.clone(), password)
+        .await
+        .is_err()
+    {
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
+    }
+
     let user = match user_store.get_user(email).await {
-        Ok(user) if user.password == password => user,
-        _ => return (jar, Err(AuthAPIError::IncorrectCredentials)),
+        Ok(user) => user,
+        Err(_) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
     };
 
     // Handle request based on user's 2FA configuration

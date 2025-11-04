@@ -22,8 +22,11 @@ impl UserStore for HashmapUserStore {
         }
     }
 
-    async fn get_user(&self, email: Email) -> Result<&User, UserStoreError> {
-        self.users.get(&email).ok_or(UserStoreError::UserNotFound)
+    async fn get_user(&self, email: Email) -> Result<User, UserStoreError> {
+        match self.users.get(&email) {
+            Some(user) => Ok(user.clone()),
+            None => Err(UserStoreError::UserNotFound),
+        }
     }
 
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError> {

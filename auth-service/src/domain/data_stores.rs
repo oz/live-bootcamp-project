@@ -1,12 +1,12 @@
-use rand::{Rng, distr::Uniform};
+use rand::Rng;
 use uuid::Uuid;
 
-use super::{User, email::Email, password::Password};
+use super::{email::Email, password::Password, User};
 
 #[async_trait::async_trait]
 pub trait UserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
-    async fn get_user(&self, email: Email) -> Result<&User, UserStoreError>;
+    async fn get_user(&self, email: Email) -> Result<User, UserStoreError>;
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError>;
 }
 
@@ -92,14 +92,15 @@ impl TwoFACode {
 
 impl Default for TwoFACode {
     fn default() -> Self {
-        let mut rng = rand::rng();
-        let range = Uniform::new_inclusive(0, 9).unwrap();
-        let code: String = (&mut rng)
-            .sample_iter(range)
-            .take(6)
-            .map(|n: u32| char::from_digit(n, 10).unwrap())
-            .collect();
-        TwoFACode(code)
+        Self(rand::thread_rng().gen_range(100_000..=999_999).to_string())
+        //let mut rng = rand::rng();
+        //let range = Uniform::new_inclusive(0, 9).unwrap();
+        //let code: String = (&mut rng)
+        //    .sample_iter(range)
+        //    .take(6)
+        //    .map(|n: u32| char::from_digit(n, 10).unwrap())
+        //    .collect();
+        //TwoFACode(code)
     }
 }
 
