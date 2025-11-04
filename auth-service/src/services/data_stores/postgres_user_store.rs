@@ -1,15 +1,15 @@
 use std::error::Error;
 
 use argon2::{
-    Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version,
     password_hash::{self, SaltString},
+    Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version,
 };
 
 use sqlx::PgPool;
 
 use crate::domain::{
-    Email, Password, User,
     data_stores::{UserStore, UserStoreError},
+    Email, Password, User,
 };
 
 pub struct PostgresUserStore {
@@ -36,15 +36,15 @@ impl UserStore for PostgresUserStore {
             .await
             .map_err(|_| UserStoreError::UnexpectedError)?;
 
-        sqlx::query(
+        sqlx::query!(
             r#"
             INSERT INTO users (email, password_hash, requires_2fa)
             VALUES($1, $2, $3)
             "#,
+            user.email.as_ref(),
+            password_hash,
+            user.requires_2fa,
         )
-        .bind(user.email.as_ref())
-        .bind(password_hash)
-        .bind(user.requires_2fa)
         .execute(&self.pool)
         .await
         .map_err(|e| {
@@ -60,10 +60,11 @@ impl UserStore for PostgresUserStore {
     }
 
     async fn get_user(&self, email: Email) -> Result<User, UserStoreError> {
-        let row = sqlx::query_as::<_, PgUserRow>(
+        let row = sqlx::query_as!(
+            PgUserRow,
             "SELECT email, password_hash, requires_2fa FROM users WHERE email = $1",
+            email.as_ref(),
         )
-        .bind(email.as_ref())
         .fetch_one(&self.pool)
         .await
         .map_err(|_| UserStoreError::UserNotFound)?;
