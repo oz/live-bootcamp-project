@@ -3,7 +3,7 @@ use auth_service::{domain::Email, utils::constants::JWT_COOKIE_NAME};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let random_email = get_random_email();
     let test_cases = [
         serde_json::json!({ "email": random_email, "loginAttemptId": "bad", "2FACode": false }),
@@ -20,11 +20,14 @@ async fn should_return_422_if_malformed_input() {
             test_case
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
+
     let random_email = get_random_email();
     let test_cases =
         [serde_json::json!({ "email": random_email, "loginAttemptId": "bad", "2FACode": "0" })];
@@ -38,11 +41,14 @@ async fn should_return_400_if_invalid_input() {
             test_case
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
+
     let random_email = get_random_email();
     let incorrect_credentials = serde_json::json!({
         "email": random_email,
@@ -57,13 +63,16 @@ async fn should_return_401_if_incorrect_credentials() {
         "Failed for input: {:?}",
         incorrect_credentials
     );
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_old_code() {
-    // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login
-    // request. This should fail with a 401 error.
-    let app = TestApp::new().await;
+    // This calls login twice. Then, attempt to call verify-fa with the 2FA code from the first
+    // login request. This should fail with a 401 error.
+
+    let mut app = TestApp::new().await;
     let email = get_random_email();
     let password = get_random_password();
     let email_parsed = Email::parse(email.clone().as_ref()).expect("invalid email");
@@ -100,12 +109,15 @@ async fn should_return_401_if_old_code() {
         "Failed for input: {:?}",
         body
     );
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
-    // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login requet. This should fail.
-    let app = TestApp::new().await;
+    // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login
+    // request.
+    let mut app = TestApp::new().await;
     let email = get_random_email();
     let email_parsed = Email::parse(email.clone().as_ref()).expect("invalid email");
 
@@ -136,11 +148,13 @@ async fn should_return_200_if_correct_code() {
         .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
         .expect("No auth cookie found");
     assert!(!auth_cookie.value().is_empty());
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_same_code_twice() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let email = get_random_email();
     let email_parsed = Email::parse(email.clone().as_ref()).expect("invalid email");
 
@@ -176,4 +190,6 @@ async fn should_return_401_if_same_code_twice() {
     // Using the same code twice does not.
     let response = app.post_verify_2fa(&body).await;
     assert_eq!(response.status().as_u16(), 401);
+
+    app.clean_up().await;
 }
