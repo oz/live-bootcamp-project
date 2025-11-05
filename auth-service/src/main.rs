@@ -5,20 +5,21 @@ use tokio::sync::RwLock;
 use auth_service::{
     Application,
     app_state::AppState,
-    get_postgres_pool,
+    get_postgres_pool, get_redis_client,
     services::{
-        PostgresUserStore, hashmap_two_fa_code_store::HashmapTwoFACodeStore,
-        hashset_banned_token_store::HashsetBannedTokenStore, mock_email_client::MockEmailClient,
+        PostgresUserStore, RedisBannedTokenStore, hashmap_two_fa_code_store::HashmapTwoFACodeStore,
+        mock_email_client::MockEmailClient,
     },
-    utils::constants::{DATABASE_URL, prod},
+    utils::constants::{DATABASE_URL, REDIS_HOST_NAME, prod},
 };
 
 #[tokio::main]
 async fn main() {
     let pg_pool = configure_postgresql().await;
+    let redis_conn = Arc::new(RwLock::new(configure_redis()));
 
     let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
-    let banned_tokens_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+    let banned_tokens_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_conn)));
     let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
     let email_client = Arc::new(RwLock::new(MockEmailClient {}));
 
@@ -41,11 +42,18 @@ pub async fn configure_postgresql() -> PgPool {
         .await
         .expect("Failed to create Postgres connection pool!");
 
-    // Run database migrations against our test database!
+    // Run database migrations at startup.
     sqlx::migrate!()
         .run(&pg_pool)
         .await
         .expect("Failed to run migrations");
 
     pg_pool
+}
+
+fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }
