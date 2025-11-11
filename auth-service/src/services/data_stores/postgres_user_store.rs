@@ -1,4 +1,5 @@
 use std::error::Error;
+use tracing;
 
 use argon2::{
     password_hash::{self, SaltString},
@@ -31,6 +32,7 @@ struct PgUserRow {
 
 #[async_trait::async_trait]
 impl UserStore for PostgresUserStore {
+    #[tracing::instrument(name = "Adding user to PostgreSQL", skip_all)]
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         let password_hash = compute_password_hash(user.password.as_ref().to_owned())
             .await
@@ -48,17 +50,19 @@ impl UserStore for PostgresUserStore {
         .execute(&self.pool)
         .await
         .map_err(|e| {
-            let err = e.as_database_error().unwrap();
-            if err.is_unique_violation() {
-                UserStoreError::UserAlreadyExists
-            } else {
-                UserStoreError::UnexpectedError
+            let is_unique = e
+                .as_database_error()
+                .filter(|db_err| db_err.is_unique_violation());
+            match is_unique {
+                Some(_) => UserStoreError::UserAlreadyExists,
+                _ => UserStoreError::UnexpectedError,
             }
         })?;
 
         Ok(())
     }
 
+    #[tracing::instrument(name = "Retrieving user from PostgreSQL", skip_all)]
     async fn get_user(&self, email: Email) -> Result<User, UserStoreError> {
         let row = sqlx::query_as!(
             PgUserRow,
@@ -74,6 +78,7 @@ impl UserStore for PostgresUserStore {
         Ok(User::new(email, password, row.requires_2fa).clone())
     }
 
+    #[tracing::instrument(name = "Validating user credentials in PostgreSQL", skip_all)]
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError> {
         let user = self.get_user(email).await?;
         verify_password_hash(
@@ -87,7 +92,7 @@ impl UserStore for PostgresUserStore {
     }
 }
 
-// Helper function to verify if a given password matches an expected hash
+#[tracing::instrument(name = "Verify password hash", skip_all)]
 async fn verify_password_hash(
     expected_password_hash: String,
     password_candidate: String,
@@ -98,14 +103,14 @@ async fn verify_password_hash(
     })
     .await
     // JoinError
-    .map_err(|e| Box::<dyn Error>::from(e))?
+    .map_err(Box::<dyn Error>::from)?
     // PasswordHash error
-    .map_err(|e| Box::<dyn Error>::from(e))?;
+    .map_err(Box::<dyn Error>::from)?;
 
     Ok(())
 }
 
-// Helper function to hash passwords before persisting them in the database.
+#[tracing::instrument(name = "Computing password hash", skip_all)]
 async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error>> {
     let handle = tokio::task::spawn_blocking(move || -> Result<String, password_hash::Error> {
         let salt: SaltString = SaltString::generate(&mut rand::thread_rng());
@@ -120,8 +125,8 @@ async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error
 
     let password_hash = handle
         .await
-        .map_err(|e| Box::<dyn Error>::from(e))?
-        .map_err(|e| Box::<dyn Error>::from(e))?;
+        .map_err(Box::<dyn Error>::from)?
+        .map_err(Box::<dyn Error>::from)?;
 
     Ok(password_hash.to_string())
 }

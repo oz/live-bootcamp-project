@@ -3,18 +3,23 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use auth_service::{
-    Application,
     app_state::AppState,
     get_postgres_pool, get_redis_client,
     services::{
-        PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore,
-        mock_email_client::MockEmailClient,
+        mock_email_client::MockEmailClient, PostgresUserStore, RedisBannedTokenStore,
+        RedisTwoFACodeStore,
     },
-    utils::constants::{DATABASE_URL, REDIS_HOST_NAME, prod},
+    utils::{
+        constants::{prod, DATABASE_URL, REDIS_HOST_NAME},
+        tracing::init_tracing,
+    },
+    Application,
 };
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
+
     let pg_pool = configure_postgresql().await;
     let banned_token_redis_conn = Arc::new(RwLock::new(configure_redis()));
     let two_fa_redis_conn = Arc::new(RwLock::new(configure_redis()));

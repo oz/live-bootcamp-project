@@ -1,6 +1,7 @@
 use super::email;
 use super::password;
 
+#[derive(Debug)]
 pub enum AuthAPIError {
     UserAlreadyExists,
     InvalidCredentials,

@@ -1,11 +1,13 @@
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
+use tracing;
 
 use crate::{
+    domain::{email::Email, password::Password, AuthAPIError, User},
     AppState,
-    domain::{AuthAPIError, User, email::Email, password::Password},
 };
 
+#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
 pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
