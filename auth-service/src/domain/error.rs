@@ -1,26 +1,21 @@
-use super::email;
-use super::password;
+use color_eyre::eyre::Report;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum AuthAPIError {
+    #[error("User already exists")]
     UserAlreadyExists,
+    #[error("Invalid credentials")]
     InvalidCredentials,
+    #[error("Incorrect credentials")]
     IncorrectCredentials,
-    UnexpectedError,
 
     // JWT
+    #[error("Missing token")]
     MissingToken,
+    #[error("Invalid token")]
     InvalidToken,
-}
 
-impl From<email::EmailError> for AuthAPIError {
-    fn from(_value: email::EmailError) -> Self {
-        AuthAPIError::InvalidCredentials
-    }
-}
-
-impl From<password::PasswordError> for AuthAPIError {
-    fn from(_value: password::PasswordError) -> Self {
-        AuthAPIError::InvalidCredentials
-    }
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] Report),
 }

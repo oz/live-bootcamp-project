@@ -1,4 +1,6 @@
+use color_eyre::eyre::Report;
 use rand::Rng;
+use thiserror::Error;
 use uuid::Uuid;
 
 use super::{email::Email, password::Password, User};
@@ -10,20 +12,37 @@ pub trait UserStore {
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError>;
 }
 
-// TODO: Change return type from bool to Result<(), BannedTokenStoreError>
-//       Bool won't work well when the underlying impl must have side-effects.
 #[async_trait::async_trait]
 pub trait BannedTokenStore {
     async fn add_token(&mut self, token: &str) -> Result<(), BannedTokenStoreError>;
     async fn has_token(&self, token: &str) -> Result<bool, BannedTokenStoreError>;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error)]
 pub enum UserStoreError {
+    #[error("User already exists")]
     UserAlreadyExists,
+
+    #[error("User not found")]
     UserNotFound,
+
+    #[error("Invalid credentials")]
     InvalidCredentials,
-    UnexpectedError,
+
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] Report),
+}
+
+impl PartialEq for UserStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::UserAlreadyExists, Self::UserAlreadyExists)
+                | (Self::UserNotFound, Self::UserNotFound)
+                | (Self::InvalidCredentials, Self::InvalidCredentials)
+                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,7 +50,6 @@ pub enum BannedTokenStoreError {
     UnexpectedError,
 }
 
-// This trait represents the interface all concrete 2FA code stores should implement
 #[async_trait::async_trait]
 pub trait TwoFACodeStore {
     async fn add_code(
@@ -93,14 +111,6 @@ impl TwoFACode {
 impl Default for TwoFACode {
     fn default() -> Self {
         Self(rand::thread_rng().gen_range(100_000..=999_999).to_string())
-        //let mut rng = rand::rng();
-        //let range = Uniform::new_inclusive(0, 9).unwrap();
-        //let code: String = (&mut rng)
-        //    .sample_iter(range)
-        //    .take(6)
-        //    .map(|n: u32| char::from_digit(n, 10).unwrap())
-        //    .collect();
-        //TwoFACode(code)
     }
 }
 
