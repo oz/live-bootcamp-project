@@ -1,5 +1,6 @@
 use auth_service::{ErrorResponse, utils::constants::JWT_COOKIE_NAME};
 use reqwest::Url;
+use secrecy::Secret;
 
 use crate::helpers::{TestApp, get_random_email};
 
@@ -64,7 +65,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     // On logout, the token is added to our banned store.
     let store = app.banned_tokens_store.read().await;
-    let found = store.has_token(&token).await;
+    let found = store.has_token(Secret::new(token)).await;
     assert!(found.is_ok() && found.unwrap());
     drop(store);
 

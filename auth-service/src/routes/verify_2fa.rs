@@ -1,5 +1,6 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::CookieJar;
+use secrecy::Secret;
 use serde::Deserialize;
 use tracing;
 
@@ -19,10 +20,10 @@ pub async fn verify_2fa(
     let Ok(email) = Email::parse(request.email) else {
         return (jar, Err(AuthAPIError::InvalidCredentials));
     };
-    let Ok(login_attempt_id) = LoginAttemptId::parse(request.login_attempt_id) else {
+    let Ok(login_attempt_id) = LoginAttemptId::parse(Secret::new(request.login_attempt_id)) else {
         return (jar, Err(AuthAPIError::InvalidCredentials));
     };
-    let Ok(two_fa_code) = TwoFACode::parse(request.two_fa_code) else {
+    let Ok(two_fa_code) = TwoFACode::parse(Secret::from(request.two_fa_code)) else {
         return (jar, Err(AuthAPIError::InvalidCredentials));
     };
 
@@ -52,7 +53,7 @@ pub async fn verify_2fa(
 
 #[derive(Debug, Deserialize)]
 pub struct Verify2FARequest {
-    pub email: String,
+    pub email: Secret<String>,
 
     #[serde(rename = "loginAttemptId")]
     pub login_attempt_id: String,

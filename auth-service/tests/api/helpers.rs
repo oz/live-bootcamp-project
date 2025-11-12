@@ -3,6 +3,7 @@ use fake::{
     faker::internet::en::{Password, SafeEmail},
 };
 use reqwest::{Url, cookie::Jar};
+use secrecy::{ExposeSecret, Secret};
 use sqlx::{
     Connection, Executor, PgPool,
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -144,7 +145,7 @@ impl TestApp {
     }
 
     pub fn authenticate_user(&self, email: &str) -> String {
-        let email = Email::parse(email.to_owned()).unwrap();
+        let email = Email::parse(Secret::new(email.to_owned())).unwrap();
         let token = utils::auth::generate_auth_cookie(&email).unwrap();
         self.cookie_jar.add_cookie_str(
             &format!(
@@ -207,9 +208,13 @@ async fn configure_postgresql() -> PgPool {
     // We are creating a new database for each test case, and we need to ensure each database has a unique name!
     let db_name = Uuid::new_v4().to_string();
 
-    configure_database(&postgresql_conn_url, &db_name).await;
+    configure_database(postgresql_conn_url.expose_secret(), &db_name).await;
 
-    let postgresql_conn_url_with_db = format!("{}/{}", postgresql_conn_url, db_name);
+    let postgresql_conn_url_with_db = Secret::new(format!(
+        "{}/{}",
+        postgresql_conn_url.expose_secret(),
+        db_name
+    ));
 
     // Create a new connection pool and return it
     get_postgres_pool(&postgresql_conn_url_with_db)
@@ -246,7 +251,7 @@ async fn configure_database(db_conn_string: &str, db_name: &str) {
 }
 
 async fn delete_database(db_name: &str) {
-    let postgresql_conn_url: String = DATABASE_URL.to_owned();
+    let postgresql_conn_url = DATABASE_URL.expose_secret();
 
     let connection_options = PgConnectOptions::from_str(&postgresql_conn_url)
         .expect("Failed to parse PostgreSQL connection string");

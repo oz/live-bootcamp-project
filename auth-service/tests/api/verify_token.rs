@@ -1,4 +1,5 @@
 use auth_service::utils::constants::JWT_COOKIE_NAME;
+use secrecy::Secret;
 
 use crate::helpers::{TestApp, get_random_email};
 
@@ -61,7 +62,12 @@ async fn should_return_401_if_invalid_token() {
 async fn should_return_401_if_banned_token() {
     let mut app = TestApp::new().await;
     let mut banned_store = app.banned_tokens_store.write().await;
-    assert!(banned_store.add_token("banned").await.is_ok());
+    assert!(
+        banned_store
+            .add_token(Secret::new("banned".to_owned()))
+            .await
+            .is_ok()
+    );
     drop(banned_store); // release write lock.
 
     let body = serde_json::json!({ "token": "banned", });

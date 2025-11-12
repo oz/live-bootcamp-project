@@ -1,5 +1,6 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::CookieJar;
+use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use tracing;
 
@@ -72,7 +73,11 @@ async fn handle_2fa(
         .send_email(
             email,
             "Your 2FA login code",
-            format!("Hi there, here is you 2FA code: {}", two_fa_code.as_ref()).as_str(),
+            format!(
+                "Hi there, here is you 2FA code: {}",
+                two_fa_code.as_ref().expose_secret()
+            )
+            .as_str(),
         )
         .await
     {
@@ -81,7 +86,7 @@ async fn handle_2fa(
 
     let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
         message: "2FA required".to_owned(),
-        login_attempt_id: login_attempt_id.as_ref().to_string(),
+        login_attempt_id: login_attempt_id.as_ref().expose_secret().to_owned(),
     }));
 
     (jar, Ok((StatusCode::PARTIAL_CONTENT, response)))
@@ -109,8 +114,8 @@ async fn handle_no_2fa(
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    pub email: String,
-    pub password: String,
+    pub email: Secret<String>,
+    pub password: Secret<String>,
 }
 
 #[derive(Debug, Serialize)]

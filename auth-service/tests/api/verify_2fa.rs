@@ -1,5 +1,6 @@
 use crate::helpers::{TestApp, get_random_email, get_random_password};
 use auth_service::{domain::Email, utils::constants::JWT_COOKIE_NAME};
+use secrecy::{ExposeSecret, Secret};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -75,7 +76,7 @@ async fn should_return_401_if_old_code() {
     let mut app = TestApp::new().await;
     let email = get_random_email();
     let password = get_random_password();
-    let email_parsed = Email::parse(email.clone()).expect("invalid email");
+    let email_parsed = Email::parse(Secret::new(email.clone())).expect("invalid email");
 
     assert!(true == app.create_account(&email, &password, true).await);
 
@@ -99,8 +100,8 @@ async fn should_return_401_if_old_code() {
     // // Try to verify 2FA with the old login codes.
     let body = serde_json::json!({
         "email": email,
-        "loginAttemptId": code_tuple.0.as_ref(),
-        "2FACode": code_tuple.1.as_ref(),
+        "loginAttemptId": code_tuple.0.as_ref().expose_secret(),
+        "2FACode": code_tuple.1.as_ref().expose_secret(),
     });
     let response = app.post_verify_2fa(&body).await;
     assert_eq!(
@@ -119,7 +120,7 @@ async fn should_return_200_if_correct_code() {
     // request.
     let mut app = TestApp::new().await;
     let email = get_random_email();
-    let email_parsed = Email::parse(email.clone()).expect("invalid email");
+    let email_parsed = Email::parse(Secret::new(email.clone())).expect("invalid email");
 
     assert!(true == app.create_account(&email, "password123", true).await);
 
@@ -137,8 +138,8 @@ async fn should_return_200_if_correct_code() {
 
     let body = serde_json::json!({
         "email": email,
-        "loginAttemptId": code_tuple.0.as_ref(),
-        "2FACode": code_tuple.1.as_ref(),
+        "loginAttemptId": code_tuple.0.as_ref().expose_secret(),
+        "2FACode": code_tuple.1.as_ref().expose_secret(),
     });
     let response = app.post_verify_2fa(&body).await;
     assert_eq!(response.status().as_u16(), 200);
@@ -156,7 +157,7 @@ async fn should_return_200_if_correct_code() {
 async fn should_return_401_if_same_code_twice() {
     let mut app = TestApp::new().await;
     let email = get_random_email();
-    let email_parsed = Email::parse(email.clone()).expect("invalid email");
+    let email_parsed = Email::parse(Secret::new(email.clone())).expect("invalid email");
 
     assert!(true == app.create_account(&email, "password123", true).await);
 
@@ -175,8 +176,8 @@ async fn should_return_401_if_same_code_twice() {
     // Verifying the codes once works
     let body = serde_json::json!({
         "email": email,
-        "loginAttemptId": code_tuple.0.as_ref(),
-        "2FACode": code_tuple.1.as_ref(),
+        "loginAttemptId": code_tuple.0.as_ref().expose_secret(),
+        "2FACode": code_tuple.1.as_ref().expose_secret(),
     });
     let response = app.post_verify_2fa(&body).await;
     assert_eq!(response.status().as_u16(), 200);
