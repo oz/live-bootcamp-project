@@ -17,10 +17,10 @@ pub async fn logout(
         Some(cookie) => cookie,
         None => return (jar, Err(AuthAPIError::MissingToken)),
     };
-    let token = cookie.value();
+    let token = Secret::new(cookie.value().to_owned());
 
     // Validate token
-    let _ = match utils::auth::validate_token(state.banned_tokens_store.clone(), token).await {
+    let _ = match utils::auth::validate_token(state.banned_tokens_store.clone(), &token).await {
         Ok(claims) => claims,
         Err(_) => return (jar, Err(AuthAPIError::InvalidToken)),
     };
@@ -30,7 +30,7 @@ pub async fn logout(
         .banned_tokens_store
         .write()
         .await
-        .add_token(Secret::new(token.to_owned()))
+        .add_token(token)
         .await
     {
         return (jar, Err(AuthAPIError::UnexpectedError(e.into())));

@@ -29,7 +29,7 @@ async fn should_return_400_if_jwt_cookie_missing() {
             .await
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
-        "Missing auth token".to_owned()
+        "Missing token".to_owned()
     );
 
     app.clean_up().await;

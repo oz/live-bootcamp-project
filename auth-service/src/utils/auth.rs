@@ -57,10 +57,14 @@ fn generate_auth_token(email: &Email) -> Result<String> {
 #[tracing::instrument(name = "Generate JWT token", skip_all)]
 pub async fn validate_token(
     banned_token_store: BannedTokenStoreType,
-    token: &str,
+    token: &Secret<String>,
 ) -> Result<Claims> {
-    let secret = Secret::new(token.to_owned());
-    match banned_token_store.read().await.has_token(secret).await {
+    match banned_token_store
+        .read()
+        .await
+        .has_token(token.clone())
+        .await
+    {
         Ok(true) => {
             return Err(eyre!("token is banned"));
         }
@@ -69,7 +73,7 @@ pub async fn validate_token(
     }
 
     decode::<Claims>(
-        token,
+        token.expose_secret(),
         &DecodingKey::from_secret(JWT_SECRET.expose_secret().as_bytes()),
         &Validation::default(),
     )
@@ -139,7 +143,7 @@ mod tests {
     async fn test_validate_token_with_valid_token() {
         let empty_banned_store = get_empty_store();
         let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
-        let token = generate_auth_token(&email).unwrap();
+        let token = Secret::new(generate_auth_token(&email).unwrap());
         let result = validate_token(empty_banned_store, &token).await.unwrap();
         assert_eq!(result.sub, "test@example.com");
 
@@ -154,7 +158,7 @@ mod tests {
     #[tokio::test]
     async fn test_validate_token_with_invalid_token() {
         let empty_banned_store = get_empty_store();
-        let token = "invalid_token".to_owned();
+        let token = Secret::new("invalid_token".to_owned());
         let result = validate_token(empty_banned_store, &token).await;
         assert!(result.is_err());
     }
