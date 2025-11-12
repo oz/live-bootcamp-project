@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use crate::domain::data_stores::{BannedTokenStore, BannedTokenStoreError};
+use std::collections::HashSet;
 
 // Hashset store for banned user tokens.
 #[derive(Default)]
@@ -34,9 +33,11 @@ mod tests {
     #[tokio::test]
     async fn test_has_token() {
         let mut store = HashsetBannedTokenStore::default();
-        assert_eq!(store.has_token("test").await, Ok(false));
+        let found = store.has_token("test").await;
+        assert_eq!(found.unwrap(), false);
 
         store.tokens.insert("test".to_owned());
-        assert_eq!(store.has_token("test").await, Ok(true));
+        let found = store.has_token("test").await;
+        assert_eq!(found.unwrap(), true);
     }
 }

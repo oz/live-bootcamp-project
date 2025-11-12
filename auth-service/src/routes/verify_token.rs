@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 use crate::{AppState, domain::AuthAPIError, utils};
 
+#[tracing::instrument(name = "Verify token", skip_all)]
 pub async fn verify_token(
     State(state): State<AppState>,
     Json(request): Json<VerifyTokenRequest>,

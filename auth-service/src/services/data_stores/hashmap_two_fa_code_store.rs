@@ -50,7 +50,7 @@ mod tests {
     #[tokio::test]
     async fn test_add_code() {
         let mut store = HashmapTwoFACodeStore::default();
-        let email = Email::parse("test@example.com").expect("invalid email");
+        let email = Email::parse("test@example.com".to_owned()).expect("invalid email");
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 
@@ -64,7 +64,7 @@ mod tests {
     #[tokio::test]
     async fn test_remove_code() {
         let mut store = HashmapTwoFACodeStore::default();
-        let email = Email::parse("test@example.com").expect("invalid email");
+        let email = Email::parse("test@example.com".to_owned()).expect("invalid email");
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 
@@ -79,7 +79,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_code() {
         let mut store = HashmapTwoFACodeStore::default();
-        let email = Email::parse("test@example.com").expect("invalid email");
+        let email = Email::parse("test@example.com".to_owned()).expect("invalid email");
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 

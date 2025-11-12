@@ -1,12 +1,16 @@
+use color_eyre::eyre::{Result, eyre};
+
 const MIN_PASSWORD_LENGTH: usize = 8;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct Password(String);
 
 impl Password {
-    pub fn parse(pass: String) -> Result<Password, String> {
+    pub fn parse(pass: String) -> Result<Password> {
         if pass.is_empty() || pass.len() < MIN_PASSWORD_LENGTH {
-            Err("Failed to parse string to a Password type".to_owned())
+            Err(eyre!(
+                "Failed to parse string to a Password type".to_owned()
+            ))
         } else {
             Ok(Password(pass.to_owned()))
         }

@@ -144,7 +144,7 @@ impl TestApp {
     }
 
     pub fn authenticate_user(&self, email: &str) -> String {
-        let email = Email::parse(email).unwrap();
+        let email = Email::parse(email.to_owned()).unwrap();
         let token = utils::auth::generate_auth_cookie(&email).unwrap();
         self.cookie_jar.add_cookie_str(
             &format!(

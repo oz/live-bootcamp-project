@@ -19,6 +19,7 @@ services:
       DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD}@db:5432"
     depends_on:
       - db
+    tty: true
   db:
     image: postgres:15.2-alpine
     restart: always

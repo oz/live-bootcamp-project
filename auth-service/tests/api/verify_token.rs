@@ -61,7 +61,7 @@ async fn should_return_401_if_invalid_token() {
 async fn should_return_401_if_banned_token() {
     let mut app = TestApp::new().await;
     let mut banned_store = app.banned_tokens_store.write().await;
-    assert_eq!(Ok(()), banned_store.add_token("banned").await);
+    assert!(banned_store.add_token("banned").await.is_ok());
     drop(banned_store); // release write lock.
 
     let body = serde_json::json!({ "token": "banned", });

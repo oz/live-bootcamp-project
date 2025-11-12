@@ -1,14 +1,15 @@
+use color_eyre::eyre::{Result, eyre};
 use validator::validate_email;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct Email(String);
 
 impl Email {
-    pub fn parse(s: String) -> Result<Email, String> {
+    pub fn parse(s: String) -> Result<Email> {
         if validate_email(&s) {
             Ok(Email(s))
         } else {
-            Err(format!("{} is not a valid email.", s))
+            Err(eyre!("{} is not a valid email.", s))
         }
     }
 }
@@ -22,7 +23,7 @@ impl AsRef<str> for Email {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fake::{faker::internet::en::*, Fake};
+    use fake::{Fake, faker::internet::en::*};
 
     #[test]
     fn test_parse_email() {

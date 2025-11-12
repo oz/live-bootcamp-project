@@ -1,13 +1,13 @@
 use axum::{
+    Json, Router,
     http::{Method, StatusCode},
     response::{IntoResponse, Response},
     routing::post,
     serve::Serve,
-    Json, Router,
 };
 use redis::{Client, RedisResult};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::error::Error;
 use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 
@@ -45,9 +45,9 @@ impl Application {
         let router = Router::new()
             .nest_service("/", ServeDir::new("assets"))
             .route("/signup", post(routes::signup))
-            //.route("/login", post(routes::login))
+            .route("/login", post(routes::login))
             //.route("/logout", post(routes::logout))
-            //.route("/verify-2fa", post(routes::verify_2fa))
+            .route("/verify-2fa", post(routes::verify_2fa))
             .route("/verify-token", post(routes::verify_token))
             .with_state(app_state)
             .layer(cors)
