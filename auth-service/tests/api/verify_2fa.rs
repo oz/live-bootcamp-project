@@ -1,6 +1,10 @@
 use crate::helpers::{TestApp, get_random_email, get_random_password};
 use auth_service::{domain::Email, utils::constants::JWT_COOKIE_NAME};
 use secrecy::{ExposeSecret, Secret};
+use wiremock::{
+    Mock, ResponseTemplate,
+    matchers::{method, path},
+};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -79,6 +83,12 @@ async fn should_return_401_if_old_code() {
     let email_parsed = Email::parse(Secret::new(email.clone())).expect("invalid email");
 
     assert!(true == app.create_account(&email, &password, true).await);
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(2)
+        .mount(&app.email_server)
+        .await;
 
     // Try to login, to create a first 2FA code.
     let body = serde_json::json!({ "email": email, "password": password});
@@ -123,6 +133,12 @@ async fn should_return_200_if_correct_code() {
     let email_parsed = Email::parse(Secret::new(email.clone())).expect("invalid email");
 
     assert!(true == app.create_account(&email, "password123", true).await);
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     // Try to login, to create a first 2FA code.
     let body = serde_json::json!({ "email": email, "password": "password123" });
@@ -160,6 +176,13 @@ async fn should_return_401_if_same_code_twice() {
     let email_parsed = Email::parse(Secret::new(email.clone())).expect("invalid email");
 
     assert!(true == app.create_account(&email, "password123", true).await);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     // Try to login, to get a first 2FA code.
     let body = serde_json::json!({ "email": email, "password": "password123" });
